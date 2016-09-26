@@ -19,7 +19,7 @@ void Connection:: write(const std::string& message) {
 void Connection:: close() {
     if(tcpSocket->isOpen()) {
         tcpSocket->close();
-        //delete tcpSocket;
+        delete tcpSocket;
     }
     abortedCallback(shared_from_this());
 }

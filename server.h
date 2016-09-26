@@ -19,6 +19,10 @@ class Server : public QObject {
 
 private slots:
     void newConnection();
+    void moveToThisThread(QTcpSocket* socket, QThread* thread);
+
+signals:
+    void movedThread();
 
 public:
     void listen();

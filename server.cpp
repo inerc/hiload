@@ -20,9 +20,17 @@ void Server::newConnection() {
                                                                 std::unique_lock <std::mutex> lock(serverMutex);
                                                                 connected.erase(ptr);
                                                             } );
+    connect(connection.get(), &Connection::moveToThisThread, this, &Server::moveToThisThread);
+    connect(this, &Server::movedThread, connection.get(), &Connection::movedThread);
 
     {
         std::unique_lock <std::mutex> lock(serverMutex);
         connected.insert(connection);
     }
+}
+
+void Server::moveToThisThread(QTcpSocket* socket, QThread* thread) {
+    socket->setParent(nullptr);
+    socket->moveToThread(thread);
+    emit movedThread();
 }

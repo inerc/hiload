@@ -6,10 +6,11 @@
 #include <QDateTime>
 #include <fstream>
 #include <sys/stat.h>
+#include <QLocale>
 
 class RequestHandler
 {
-    mutable std::map<std::string, std::string> ext_to_mime =
+    std::map<std::string, std::string> ext_to_mime =
     {
     { "txt", "text/plain" },
     { "html", "text/html" },

@@ -5,7 +5,7 @@ RequestHandler::RequestHandler(const std::string& dir) : root_dir(dir) {}
 void RequestHandler::handle(const std::string& requests, std::function<void (const std::string&)> writeCallback ) {
     std::stringstream ss(requests);
     std::string met, url, prot;
-    ss>>met>>url>>prot;
+    ss >> met >> url >> prot;
     url = url_decode(url);
 
     if (met == "GET") {
@@ -24,17 +24,19 @@ std::string RequestHandler::url_decode(const std::string &url) {
       std::string res;
 
       for (size_t i = 0; i < url.length(); ++i) {
-      if (url[i] == '%') {
-      int val;
-      sscanf(url.substr(i + 1, 2).c_str(), "%x", &val);
-      res += (char)val;
-      i += 2;
-      } else if (url[i] == '+') {
-      res += ' ';
-      } else {
-      res += url[i];
+        if (url[i] == '%') {
+        int val;
+        sscanf(url.substr(i + 1, 2).c_str(), "%x", &val);
+        res += (char)val;
+                i += 2;
       }
+        else if (url[i] == '+') {
+                res += ' ';
+      } else
+        {
+                res += url[i];
       }
+   }
       size_t pos;
       while ((pos = res.find("/../")) != std::string::npos) {
       res.erase(pos, 4);
@@ -42,24 +44,26 @@ std::string RequestHandler::url_decode(const std::string &url) {
       if ((pos = res.find('?')) != std::string::npos) {
       res = res.substr(0, pos);
       }
-      return res;
+        return res;
       }
 
 std::string RequestHandler::message_headers() {
     std::ostringstream headers;
+    static QLocale loc("en_US");
+
     headers << "Server: Srver01\r\n"
-            << "Date: " << QDateTime::currentDateTimeUtc().toString("ddd, dd MMM yyyy hh:mm:ss").toStdString() << " GMT\r\n"
+            << "Date: " << loc.toString(QDateTime::currentDateTimeUtc(), "ddd, dd MMM yyyy HH:mm:ss").toStdString() << " GMT\r\n"
             << "Connection: close\r\n";
     return headers.str();
 }
 
 void RequestHandler::GET(const std::string &url, const std::string &protocol,
          std::function<void (const std::string&)> writeCallback){
-    std::string path = root_dir + url;
-    bool dir;
-    if ((dir = is_directory(path))) {
-    if (path.back() != '/') path += '/';
-    path += "index.html";
+            std::string path = root_dir + url;
+             bool dir;
+                if ((dir = is_directory(path))) {
+                if (path.back() != '/') path += '/';
+                path += "index.html";
        }
 
     std::string headers(message_headers());
@@ -83,6 +87,24 @@ void RequestHandler::GET(const std::string &url, const std::string &protocol,
 
 void RequestHandler::HEAD(const std::string &url, const std::string &protocol,
         std::function<void (const std::string&)> writeCallback){
+    std::string path = root_dir + url;
+     bool dir;
+        if ((dir = is_directory(path))) {
+        if (path.back() != '/') path += '/';
+        path += "index.html";
+}
+
+            std::string headers(message_headers());
+            if(file_exists(path)){
+            std::string ext = dir ? "html" : get_extension(path);
+            headers+=file_headers(file_size(path), ext);
+            writeCallback(build_headers(protocol, get_code(200), headers));
+
+            } else {
+            headers+=file_headers(strlen(dir ? forbidden : not_found), "html");
+            writeCallback(build_headers(protocol, get_code(dir ? 403:404), headers));
+            writeCallback(dir ? forbidden: not_found);
+            }
 
 }
 
@@ -94,13 +116,19 @@ return (stat(path.c_str(), &s) == 0) && (s.st_mode & S_IFDIR);
 
 void RequestHandler::NotAllowed(const std::string &protocol,
         std::function<void (const std::string&)> writeCallback){
-
+    std::string headers(message_headers());
+    headers += file_headers(strlen(not_allowed), "html");
+    writeCallback(build_headers(protocol, get_code(405), headers));
+    writeCallback(not_allowed);
 }
 
 
 void RequestHandler::NotImplemented(const std::string &protocol,
         std::function<void (const std::string&)> writeCallback){
-
+    std::string headers(message_headers());
+    headers += file_headers(strlen(not_implemented), "html");
+    writeCallback(build_headers(protocol, get_code(501), headers));
+    writeCallback(not_implemented);
 }
 
 bool RequestHandler::file_exists(const std::string &path) {
